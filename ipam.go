@@ -123,7 +123,7 @@ func (p ipam) setDatacenterAllocation(dc string, dcConfig IPAMPoolDatacenterSett
 
 			quantityToAllocate := int(dcConfig.AllocationRange)
 
-			newAdresses := []string{}
+			newAddresses := []string{}
 			firstAddressRangeIP := freeIPs[freeIPsIterator]
 			for j := 0; j < quantityToAllocate; j++ {
 				ipToAllocate := freeIPs[freeIPsIterator]
@@ -132,14 +132,14 @@ func (p ipam) setDatacenterAllocation(dc string, dcConfig IPAMPoolDatacenterSett
 				// if no next ip to allocate or next ip is not the next one, close a new address range
 				if j+1 == quantityToAllocate || !isTheNextIP(freeIPs[freeIPsIterator], ipToAllocate) {
 					addressRange := fmt.Sprintf("%s-%s", firstAddressRangeIP, ipToAllocate)
-					newAdresses = append(newAdresses, addressRange)
+					newAddresses = append(newAddresses, addressRange)
 					if j+1 < quantityToAllocate {
 						firstAddressRangeIP = freeIPs[freeIPsIterator]
 					}
 				}
 			}
 			p.datacenterAllocations[dc][i].Type = "range"
-			p.datacenterAllocations[dc][i].Addresses = append(dcAllocation.Addresses, newAdresses...)
+			p.datacenterAllocations[dc][i].Addresses = append(dcAllocation.Addresses, newAddresses...)
 		case "prefix":
 			// skip already allocated cluster
 			if dcAllocation.CIDR != "" || len(dcAllocation.Addresses) > 0 {

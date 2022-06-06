@@ -249,7 +249,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					Datacenters: map[string]IPAMPoolDatacenterSettings{
 						"aws-eu-1": {
 							Type:             "prefix",
-							PoolCIDR:         "192.168.1.0/16",
+							PoolCIDR:         "192.168.0.0/16",
 							AllocationPrefix: 28,
 						},
 					},
@@ -279,7 +279,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					Datacenters: map[string]IPAMPoolDatacenterSettings{
 						"aws-eu-1": {
 							Type:             "prefix",
-							PoolCIDR:         "192.168.1.0/16",
+							PoolCIDR:         "192.168.0.0/16",
 							AllocationPrefix: 28,
 						},
 					},
@@ -317,12 +317,12 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					Datacenters: map[string]IPAMPoolDatacenterSettings{
 						"aws-eu-1": {
 							Type:             "prefix",
-							PoolCIDR:         "192.168.1.0/16",
+							PoolCIDR:         "192.168.0.0/16",
 							AllocationPrefix: 28,
 						},
 						"azure-as-2": {
 							Type:             "prefix",
-							PoolCIDR:         "192.168.1.0/16",
+							PoolCIDR:         "192.168.0.0/16",
 							AllocationPrefix: 28,
 						},
 					},
@@ -365,7 +365,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					Datacenters: map[string]IPAMPoolDatacenterSettings{
 						"aws-eu-1": {
 							Type:             "prefix",
-							PoolCIDR:         "192.169.1.0/16",
+							PoolCIDR:         "192.169.0.0/16",
 							AllocationPrefix: 27,
 						},
 					},
@@ -394,7 +394,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 			},
 		},
 		{
-			name: "from range to prefix and from prefix to range",
+			name: "from range to prefix and from prefix to range: should keep previous allocation type",
 			initialDatacenterAllocations: map[string][]IPAMAllocation{
 				"aws-eu-1": {
 					{},
@@ -417,12 +417,12 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					Datacenters: map[string]IPAMPoolDatacenterSettings{
 						"aws-eu-1": {
 							Type:             "prefix",
-							PoolCIDR:         "192.169.2.0/16",
+							PoolCIDR:         "192.169.0.0/16",
 							AllocationPrefix: 20,
 						},
 						"azure-as-2": {
 							Type:             "prefix",
-							PoolCIDR:         "192.169.2.0/16",
+							PoolCIDR:         "192.169.0.0/16",
 							AllocationPrefix: 20,
 						},
 					},
@@ -436,7 +436,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						},
 						"azure-as-2": {
 							Type:            "range",
-							PoolCIDR:        "192.169.2.0/20",
+							PoolCIDR:        "192.169.0.0/20",
 							AllocationRange: 4096,
 						},
 					},

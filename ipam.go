@@ -2,7 +2,6 @@ package ipam
 
 import (
 	"fmt"
-	"math"
 	"net"
 	"strings"
 )
@@ -33,44 +32,44 @@ type Cluster struct {
 
 type ipam struct {
 	datacenterAllocations map[string][]Cluster
-	dcIPAMPoolUsedIPs     map[string]map[string]struct{}
+	dcIPAMPoolUsageMap    map[string]map[string]struct{}
 }
 
 func newIPAM(dcAllocations map[string][]Cluster) ipam {
 	ipam := ipam{
 		datacenterAllocations: dcAllocations,
-		dcIPAMPoolUsedIPs:     make(map[string]map[string]struct{}),
+		dcIPAMPoolUsageMap:    make(map[string]map[string]struct{}),
 	}
 
 	return ipam
 }
 
-func (p ipam) resetUsedIPs() {
-	for k := range p.dcIPAMPoolUsedIPs {
-		delete(p.dcIPAMPoolUsedIPs, k)
+func (p ipam) clearUsageMap() {
+	for k := range p.dcIPAMPoolUsageMap {
+		delete(p.dcIPAMPoolUsageMap, k)
 	}
 }
 
-func (p ipam) setUsedIP(dc string, ipamPool string, ip string) {
+func (p ipam) setUsed(dc string, ipamPool string, value string) {
 	key := fmt.Sprintf("%s-%s", dc, ipamPool)
-	_, hasUsedIPs := p.dcIPAMPoolUsedIPs[key]
+	_, hasUsedIPs := p.dcIPAMPoolUsageMap[key]
 	if !hasUsedIPs {
-		p.dcIPAMPoolUsedIPs[key] = map[string]struct{}{}
+		p.dcIPAMPoolUsageMap[key] = map[string]struct{}{}
 	}
-	p.dcIPAMPoolUsedIPs[key][ip] = struct{}{}
+	p.dcIPAMPoolUsageMap[key][value] = struct{}{}
 }
 
-func (p ipam) isUsedIP(dc string, ipamPool string, ip string) bool {
-	usedIPs, hasUsedIPs := p.dcIPAMPoolUsedIPs[fmt.Sprintf("%s-%s", dc, ipamPool)]
-	if hasUsedIPs {
-		_, isUsedIP := usedIPs[ip]
-		return isUsedIP
+func (p ipam) isUsed(dc string, ipamPool string, value string) bool {
+	usedValues, hasUsedValues := p.dcIPAMPoolUsageMap[fmt.Sprintf("%s-%s", dc, ipamPool)]
+	if hasUsedValues {
+		_, isUsed := usedValues[value]
+		return isUsed
 	}
 	return false
 }
 
 func (p ipam) apply(ipamPool IPAMPool) error {
-	p.resetUsedIPs()
+	p.clearUsageMap()
 
 	// calculate used IPs for each datacenter IPAMPool
 	for dc, clusters := range p.datacenterAllocations {
@@ -91,20 +90,14 @@ func (p ipam) apply(ipamPool IPAMPool) error {
 						if lastIP == nil {
 							return fmt.Errorf("wrong ip format")
 						}
-						for ip := firstIP; !ip.Equal(lastIP); incIP(ip, 1) {
-							p.setUsedIP(dc, clusterAllocation.IPAMPoolName, ip.String())
+						for ip := firstIP; !ip.Equal(lastIP); ip = incIP(ip) {
+							p.setUsed(dc, clusterAllocation.IPAMPoolName, ip.String())
 						}
-						p.setUsedIP(dc, clusterAllocation.IPAMPoolName, lastIP.String())
+						p.setUsed(dc, clusterAllocation.IPAMPoolName, lastIP.String())
 					}
 				case "prefix":
-					if string(clusterAllocation.CIDR) != "" {
-						ip, ipNet, err := net.ParseCIDR(string(clusterAllocation.CIDR))
-						if err != nil {
-							return err
-						}
-						for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); incIP(ip, 1) {
-							p.setUsedIP(dc, clusterAllocation.IPAMPoolName, ip.String())
-						}
+					if clusterAllocation.CIDR != "" {
+						p.setUsed(dc, clusterAllocation.IPAMPoolName, clusterAllocation.CIDR)
 					}
 				}
 			}
@@ -127,25 +120,27 @@ func (p ipam) setDatacenterAllocation(dc, ipamPool string, dcConfig IPAMPoolData
 		return fmt.Errorf("no cluster deployed in datacenter %s", dc)
 	}
 
-	// calculate free ips from pool cidr
-	freeIPs := []string{}
-
-	ip, ipNet, err := net.ParseCIDR(string(dcConfig.PoolCIDR))
-	if err != nil {
-		return err
-	}
-	for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); incIP(ip, 1) {
-		if p.isUsedIP(dc, ipamPool, ip.String()) {
-			continue
+	rangeFreeIPs := []string{}
+	rangeFreeIPsIterator := 0
+	if dcConfig.Type == "range" {
+		// calculate free ips from pool cidr
+		ip, ipNet, err := net.ParseCIDR(string(dcConfig.PoolCIDR))
+		if err != nil {
+			return err
 		}
-		freeIPs = append(freeIPs, ip.String())
+		for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); ip = incIP(ip) {
+			if p.isUsed(dc, ipamPool, ip.String()) {
+				continue
+			}
+			rangeFreeIPs = append(rangeFreeIPs, ip.String())
+		}
 	}
 
 	newClustersAllocations := make([]IPAMAllocation, len(clusters))
 
 	// loop clusters for the new allocations
-	freeIPsIterator := 0
 	for i, cluster := range clusters {
+		// loop all current cluster allocations to check and return error if a pool with same name was already applied
 		for _, curAllocation := range cluster.IPAMAllocations {
 			if curAllocation.IPAMPoolName == ipamPool {
 				return fmt.Errorf("pool %s is already applied to the cluster %s", ipamPool, cluster.Name)
@@ -162,38 +157,33 @@ func (p ipam) setDatacenterAllocation(dc, ipamPool string, dcConfig IPAMPoolData
 			newClustersAllocations[i].Addresses = []string{}
 
 			quantityToAllocate := int(dcConfig.AllocationRange)
-			if (freeIPsIterator + quantityToAllocate) > len(freeIPs) {
+			if (rangeFreeIPsIterator + quantityToAllocate) > len(rangeFreeIPs) {
 				return fmt.Errorf("there is no enough free IPs available for pool %s", ipamPool)
 			}
 
-			firstAddressRangeIP := freeIPs[freeIPsIterator]
+			firstAddressRangeIP := rangeFreeIPs[rangeFreeIPsIterator]
 			for j := 0; j < quantityToAllocate; j++ {
-				ipToAllocate := freeIPs[freeIPsIterator]
-				p.setUsedIP(dc, ipamPool, ipToAllocate)
-				freeIPsIterator++
+				ipToAllocate := rangeFreeIPs[rangeFreeIPsIterator]
+				p.setUsed(dc, ipamPool, ipToAllocate)
+				rangeFreeIPsIterator++
 				// if no next ip to allocate or next ip is not the next one, close a new address range
-				if j+1 == quantityToAllocate || !isTheNextIP(freeIPs[freeIPsIterator], ipToAllocate) {
+				if j+1 == quantityToAllocate || !isTheNextIP(rangeFreeIPs[rangeFreeIPsIterator], ipToAllocate) {
 					addressRange := fmt.Sprintf("%s-%s", firstAddressRangeIP, ipToAllocate)
 					newClustersAllocations[i].Addresses = append(newClustersAllocations[i].Addresses, addressRange)
 					if j+1 < quantityToAllocate {
-						firstAddressRangeIP = freeIPs[freeIPsIterator]
+						firstAddressRangeIP = rangeFreeIPs[rangeFreeIPsIterator]
 					}
 				}
 			}
 		case "prefix":
+			var err error
 			newClustersAllocations[i].CIDR, err = p.findFirstFreeSubnetOfPool(dc, ipamPool, string(dcConfig.PoolCIDR), int(dcConfig.AllocationPrefix))
 			if err != nil {
 				return err
 			}
 
-			// mark all subnet IPs as used
-			ip, ipNet, err := net.ParseCIDR(string(newClustersAllocations[i].CIDR))
-			if err != nil {
-				return err
-			}
-			for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); incIP(ip, 1) {
-				p.setUsedIP(dc, ipamPool, ip.String())
-			}
+			// mark subnet as used
+			p.setUsed(dc, ipamPool, newClustersAllocations[i].CIDR)
 		}
 	}
 
@@ -206,53 +196,28 @@ func (p ipam) setDatacenterAllocation(dc, ipamPool string, dcConfig IPAMPoolData
 }
 
 func (p ipam) findFirstFreeSubnetOfPool(dc, ipamPool, poolCIDR string, subnetPrefix int) (string, error) {
-	ip, ipNet, err := net.ParseCIDR(poolCIDR)
+	poolIP, poolSubnet, err := net.ParseCIDR(poolCIDR)
 	if err != nil {
 		return "", err
 	}
 
-	poolPrefix, bits := ipNet.Mask.Size()
+	poolPrefix, bits := poolSubnet.Mask.Size()
 	if subnetPrefix < poolPrefix {
 		return "", fmt.Errorf("invalid prefix for subnet")
 	}
 	if subnetPrefix > bits {
 		return "", fmt.Errorf("invalid prefix for subnet")
 	}
-	subnetSize := int(math.Pow(2, float64(bits-subnetPrefix)))
 
-	for ip := ip.Mask(ipNet.Mask); ipNet.Contains(ip); incIP(ip, subnetSize) {
-		sIP, possibleSubnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", ip, subnetPrefix))
-		if err != nil {
-			return "", err
-		}
-		subnetIsOccupied := false
-		for sIP := sIP.Mask(possibleSubnet.Mask); possibleSubnet.Contains(sIP); incIP(sIP, 1) {
-			if p.isUsedIP(dc, ipamPool, sIP.String()) {
-				subnetIsOccupied = true
-				break
-			}
-		}
-		if !subnetIsOccupied {
+	_, possibleSubnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", poolIP.Mask(poolSubnet.Mask), subnetPrefix))
+	if err != nil {
+		return "", err
+	}
+	for ; poolSubnet.Contains(possibleSubnet.IP); possibleSubnet, _ = nextSubnet(possibleSubnet, subnetPrefix) {
+		if !p.isUsed(dc, ipamPool, possibleSubnet.String()) {
 			return possibleSubnet.String(), nil
 		}
 	}
 
 	return "", fmt.Errorf("cannot find free subnet")
-}
-
-func incIP(ip net.IP, count int) {
-	for i := 0; i < count; i++ {
-		for j := len(ip) - 1; j >= 0; j-- {
-			ip[j]++
-			if ip[j] > 0 {
-				break
-			}
-		}
-	}
-}
-
-func isTheNextIP(ipToCheck string, previousIP string) bool {
-	nextIP := net.ParseIP(previousIP)
-	incIP(nextIP, 1)
-	return nextIP.Equal(net.ParseIP(ipToCheck))
 }

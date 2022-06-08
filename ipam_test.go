@@ -57,6 +57,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
@@ -69,6 +71,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.8-192.168.1.15",
@@ -83,6 +87,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.15",
@@ -102,6 +108,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.3-192.168.1.4",
@@ -143,6 +151,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.3-192.168.1.4",
@@ -150,6 +160,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 							},
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
@@ -162,6 +174,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c2",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.8-192.168.1.15",
@@ -176,6 +190,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.15",
@@ -222,10 +238,10 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					},
 				},
 			},
-			expectedError: fmt.Errorf("there is no enough free IPs available for pool pool1"),
+			expectedError: fmt.Errorf("there is no enough free IPs available for pool"),
 		},
 		{
-			name: "cannot apply a pool with a name that was already applied before", // TODO: check if there are cases that we would accept the update
+			name: "range: apply a pool with a name that was already applied before (same pool)",
 			initialDatacenterAllocations: map[string][]Cluster{
 				"aws-eu-1": {
 					{
@@ -233,6 +249,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
@@ -259,6 +277,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
@@ -268,7 +288,155 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					},
 				},
 			},
-			expectedError: fmt.Errorf("pool pool1 is already applied to the cluster c1"),
+		},
+		{
+			name: "range: apply a pool with a name that was already applied before (compatible pool)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+			},
+			ipamPool: IPAMPool{
+				Name: "pool1",
+				Datacenters: map[string]IPAMPoolDatacenterSettings{
+					"aws-eu-1": {
+						Type:            "range",
+						PoolCIDR:        "192.168.1.0/27",
+						AllocationRange: 8,
+					},
+				},
+			},
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "range: apply a pool with a name that was already applied before (error, not compatible pool)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+			},
+			ipamPool: IPAMPool{
+				Name: "pool1",
+				Datacenters: map[string]IPAMPoolDatacenterSettings{
+					"aws-eu-1": {
+						Type:            "range",
+						PoolCIDR:        "192.168.1.0/30",
+						AllocationRange: 8,
+					},
+				},
+			},
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errIncompatiblePool,
+		},
+		{
+			name: "range: apply a pool with a name that was already applied before (error, different allocation range)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+			},
+			ipamPool: IPAMPool{
+				Name: "pool1",
+				Datacenters: map[string]IPAMPoolDatacenterSettings{
+					"aws-eu-1": {
+						Type:            "range",
+						PoolCIDR:        "192.168.1.0/28",
+						AllocationRange: 9,
+					},
+				},
+			},
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedError: errIncompatiblePool,
 		},
 		{
 			name: "prefix: base case",
@@ -312,6 +480,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/28",
 							},
@@ -322,6 +492,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "aws-eu-1",
 								Type:         "prefix",
 								CIDR:         "192.168.0.16/28",
 							},
@@ -334,6 +506,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/28",
 							},
@@ -351,6 +525,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/28",
 							},
@@ -390,11 +566,15 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/28",
 							},
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/21",
 							},
@@ -405,6 +585,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c2",
+								Datacenter:   "aws-eu-1",
 								Type:         "prefix",
 								CIDR:         "192.168.8.0/21",
 							},
@@ -417,6 +599,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/21",
 							},
@@ -530,19 +714,186 @@ func TestIPAMPoolReconcile(t *testing.T) {
 			expectedError: fmt.Errorf("invalid prefix for subnet"),
 		},
 		{
-			name:                         "no cluster deployed in any datacenter",
-			initialDatacenterAllocations: map[string][]Cluster{},
+			name: "prefix: apply a pool with a name that was already applied before (same pool)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
 			ipamPool: IPAMPool{
+				Name: "pool1",
 				Datacenters: map[string]IPAMPoolDatacenterSettings{
 					"aws-eu-1": {
 						Type:             "prefix",
-						PoolCIDR:         "192.168.1.0/28",
+						PoolCIDR:         "192.168.0.0/16",
+						AllocationPrefix: 28,
+					},
+				},
+			},
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "prefix: apply a pool with a name that was already applied before (compatible pool)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+			ipamPool: IPAMPool{
+				Name: "pool1",
+				Datacenters: map[string]IPAMPoolDatacenterSettings{
+					"aws-eu-1": {
+						Type:             "prefix",
+						PoolCIDR:         "192.168.0.0/28",
+						AllocationPrefix: 28,
+					},
+				},
+			},
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "prefix: apply a pool with a name that was already applied before (error, not compatible pool)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+			ipamPool: IPAMPool{
+				Name: "pool1",
+				Datacenters: map[string]IPAMPoolDatacenterSettings{
+					"aws-eu-1": {
+						Type:             "prefix",
+						PoolCIDR:         "192.168.0.0/29",
+						AllocationPrefix: 28,
+					},
+				},
+			},
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+			expectedError: errIncompatiblePool,
+		},
+		{
+			name: "prefix: apply a pool with a name that was already applied before (error, different allocation prefix)",
+			initialDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+			ipamPool: IPAMPool{
+				Name: "pool1",
+				Datacenters: map[string]IPAMPoolDatacenterSettings{
+					"aws-eu-1": {
+						Type:             "prefix",
+						PoolCIDR:         "192.168.0.0/16",
 						AllocationPrefix: 29,
 					},
 				},
 			},
-			expectedFinalDatacenterAllocations: map[string][]Cluster{},
-			expectedError:                      fmt.Errorf("no cluster deployed in datacenter aws-eu-1"),
+			expectedFinalDatacenterAllocations: map[string][]Cluster{
+				"aws-eu-1": {
+					{
+						Name: "c1",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c1",
+								Datacenter:   "aws-eu-1",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+				},
+			},
+			expectedError: errIncompatiblePool,
 		},
 	}
 

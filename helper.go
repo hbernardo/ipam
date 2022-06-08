@@ -6,6 +6,33 @@ import (
 	"net"
 )
 
+var (
+	errIncompatiblePool = fmt.Errorf("pool is incompatible with current cluster allocation")
+)
+
+type datacenterIPAMPoolUsageMap map[string]map[string]struct{}
+
+func newDatacenterIPAMPoolUsageMap() datacenterIPAMPoolUsageMap {
+	return make(datacenterIPAMPoolUsageMap)
+}
+
+func (m datacenterIPAMPoolUsageMap) setUsed(dc string, value string) {
+	_, hasUsedValues := m[dc]
+	if !hasUsedValues {
+		m[dc] = map[string]struct{}{}
+	}
+	m[dc][value] = struct{}{}
+}
+
+func (m datacenterIPAMPoolUsageMap) isUsed(dc string, value string) bool {
+	usedValues, hasUsedValues := m[dc]
+	if hasUsedValues {
+		_, isUsed := usedValues[value]
+		return isUsed
+	}
+	return false
+}
+
 func ipToInt(ip net.IP) (*big.Int, int) {
 	val := &big.Int{}
 	val.SetBytes([]byte(ip))

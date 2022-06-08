@@ -105,6 +105,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c4",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.16-192.168.1.31",
@@ -144,6 +146,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.3-192.168.1.4",
@@ -218,6 +222,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.3-192.168.1.4",
@@ -239,6 +245,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool2",
+								Cluster:      "c4",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.16-192.168.1.31",
@@ -312,6 +320,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.15",
@@ -359,6 +369,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.15",
@@ -388,6 +400,22 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						},
 					},
 				},
+				"azure-as-2": {
+					{
+						Name: "c2",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.15",
+								},
+							},
+						},
+					},
+				},
 			},
 			ipamPool: IPAMPool{
 				Name: "pool1",
@@ -396,6 +424,11 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						Type:            "range",
 						PoolCIDR:        "192.168.1.0/27",
 						AllocationRange: 8,
+					},
+					"azure-as-2": {
+						Type:            "range",
+						PoolCIDR:        "192.168.1.0/27",
+						AllocationRange: 16,
 					},
 				},
 			},
@@ -411,6 +444,22 @@ func TestIPAMPoolReconcile(t *testing.T) {
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+				"azure-as-2": {
+					{
+						Name: "c2",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.15",
 								},
 							},
 						},
@@ -437,6 +486,22 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						},
 					},
 				},
+				"azure-as-2": {
+					{
+						Name: "c2",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.15",
+								},
+							},
+						},
+					},
+				},
 			},
 			ipamPool: IPAMPool{
 				Name: "pool1",
@@ -445,6 +510,11 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						Type:            "range",
 						PoolCIDR:        "192.168.1.0/30",
 						AllocationRange: 8,
+					},
+					"azure-as-2": {
+						Type:            "range",
+						PoolCIDR:        "192.168.1.0/30",
+						AllocationRange: 16,
 					},
 				},
 			},
@@ -460,6 +530,22 @@ func TestIPAMPoolReconcile(t *testing.T) {
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+				"azure-as-2": {
+					{
+						Name: "c2",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.15",
 								},
 							},
 						},
@@ -487,6 +573,22 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						},
 					},
 				},
+				"azure-as-2": {
+					{
+						Name: "c2",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.15",
+								},
+							},
+						},
+					},
+				},
 			},
 			ipamPool: IPAMPool{
 				Name: "pool1",
@@ -495,6 +597,11 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						Type:            "range",
 						PoolCIDR:        "192.168.1.0/28",
 						AllocationRange: 9,
+					},
+					"azure-as-2": {
+						Type:            "range",
+						PoolCIDR:        "192.168.1.0/28",
+						AllocationRange: 18,
 					},
 				},
 			},
@@ -510,6 +617,22 @@ func TestIPAMPoolReconcile(t *testing.T) {
 								Type:         "range",
 								Addresses: []string{
 									"192.168.1.0-192.168.1.7",
+								},
+							},
+						},
+					},
+				},
+				"azure-as-2": {
+					{
+						Name: "c2",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c2",
+								Datacenter:   "azure-as-2",
+								Type:         "range",
+								Addresses: []string{
+									"192.168.1.0-192.168.1.15",
 								},
 							},
 						},
@@ -552,7 +675,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					},
 					"azure-as-2": {
 						Type:            "range",
-						PoolCIDR:        "192.168.1.0/27",
+						PoolCIDR:        "192.168.1.0/28",
 						AllocationRange: 16,
 					},
 				},
@@ -579,7 +702,7 @@ func TestIPAMPoolReconcile(t *testing.T) {
 					},
 				},
 			},
-			expectedError: fmt.Errorf("there is no enough free IPs available for pool pool1"),
+			expectedError: fmt.Errorf("there is no enough free IPs available for pool"),
 		},
 		{
 			name: "prefix: base case",
@@ -665,6 +788,8 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{
 							{
 								IPAMPoolName: "pool1",
+								Cluster:      "c4",
+								Datacenter:   "azure-as-2",
 								Type:         "prefix",
 								CIDR:         "192.168.0.16/28",
 							},
@@ -696,7 +821,19 @@ func TestIPAMPoolReconcile(t *testing.T) {
 				},
 				"azure-as-2": {
 					{
-						Name:            "c3",
+						Name: "c3",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+						},
+					},
+					{
+						Name:            "c4",
 						IPAMAllocations: []IPAMAllocation{},
 					},
 				},
@@ -755,11 +892,30 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						Name: "c3",
 						IPAMAllocations: []IPAMAllocation{
 							{
+								IPAMPoolName: "pool1",
+								Cluster:      "c3",
+								Datacenter:   "azure-as-2",
+								Type:         "prefix",
+								CIDR:         "192.168.0.0/28",
+							},
+							{
 								IPAMPoolName: "pool2",
 								Cluster:      "c3",
 								Datacenter:   "azure-as-2",
 								Type:         "prefix",
 								CIDR:         "192.168.0.0/21",
+							},
+						},
+					},
+					{
+						Name: "c4",
+						IPAMAllocations: []IPAMAllocation{
+							{
+								IPAMPoolName: "pool2",
+								Cluster:      "c4",
+								Datacenter:   "azure-as-2",
+								Type:         "prefix",
+								CIDR:         "192.168.8.0/21",
 							},
 						},
 					},
@@ -821,10 +977,21 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{},
 					},
 				},
+				"azure-as-2": {
+					{
+						Name:            "c2",
+						IPAMAllocations: []IPAMAllocation{},
+					},
+				},
 			},
 			ipamPool: IPAMPool{
 				Datacenters: map[string]IPAMPoolDatacenterSettings{
 					"aws-eu-1": {
+						Type:             "prefix",
+						PoolCIDR:         "192.168.1.0/28",
+						AllocationPrefix: 27,
+					},
+					"azure-as-2": {
 						Type:             "prefix",
 						PoolCIDR:         "192.168.1.0/28",
 						AllocationPrefix: 27,
@@ -835,6 +1002,12 @@ func TestIPAMPoolReconcile(t *testing.T) {
 				"aws-eu-1": {
 					{
 						Name:            "c1",
+						IPAMAllocations: []IPAMAllocation{},
+					},
+				},
+				"azure-as-2": {
+					{
+						Name:            "c2",
 						IPAMAllocations: []IPAMAllocation{},
 					},
 				},
@@ -850,10 +1023,21 @@ func TestIPAMPoolReconcile(t *testing.T) {
 						IPAMAllocations: []IPAMAllocation{},
 					},
 				},
+				"azure-as-2": {
+					{
+						Name:            "c2",
+						IPAMAllocations: []IPAMAllocation{},
+					},
+				},
 			},
 			ipamPool: IPAMPool{
 				Datacenters: map[string]IPAMPoolDatacenterSettings{
 					"aws-eu-1": {
+						Type:             "prefix",
+						PoolCIDR:         "192.168.1.0/28",
+						AllocationPrefix: 33,
+					},
+					"azure-as-2": {
 						Type:             "prefix",
 						PoolCIDR:         "192.168.1.0/28",
 						AllocationPrefix: 33,
@@ -864,6 +1048,12 @@ func TestIPAMPoolReconcile(t *testing.T) {
 				"aws-eu-1": {
 					{
 						Name:            "c1",
+						IPAMAllocations: []IPAMAllocation{},
+					},
+				},
+				"azure-as-2": {
+					{
+						Name:            "c2",
 						IPAMAllocations: []IPAMAllocation{},
 					},
 				},
